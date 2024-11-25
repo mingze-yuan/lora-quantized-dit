@@ -1,0 +1,95 @@
+[W1124 22:39:38.746857335 socket.cpp:752] [c10d] The client socket cannot be initialized to connect to [localhost]:29500 (errno: 97 - Address family not supported by protocol).
+usage: sample_ddp.py [-h]
+                     [--model {DiT-XL/2,DiT-XL/4,DiT-XL/8,DiT-L/2,DiT-L/4,DiT-L/8,DiT-B/2,DiT-B/4,DiT-B/8,DiT-S/2,DiT-S/4,DiT-S/8}]
+                     [--vae {ema,mse}] [--sample-dir SAMPLE_DIR]
+                     [--per-proc-batch-size PER_PROC_BATCH_SIZE]
+                     [--num-fid-samples NUM_FID_SAMPLES]
+                     [--image-size {256,512}] [--num-classes NUM_CLASSES]
+                     [--cfg-scale CFG_SCALE]
+                     [--num-sampling-steps NUM_SAMPLING_STEPS]
+                     [--global-seed GLOBAL_SEED] [--tf32 | --no-tf32]
+                     [--ckpt CKPT]
+usage: sample_ddp.py [-h]
+                     [--model {DiT-XL/2,DiT-XL/4,DiT-XL/8,DiT-L/2,DiT-L/4,DiT-L/8,DiT-B/2,DiT-B/4,DiT-B/8,DiT-S/2,DiT-S/4,DiT-S/8}]
+                     [--vae {ema,mse}] [--sample-dir SAMPLE_DIR]
+                     [--per-proc-batch-size PER_PROC_BATCH_SIZE]
+                     [--num-fid-samples NUM_FID_SAMPLES]
+                     [--image-size {256,512}] [--num-classes NUM_CLASSES]
+                     [--cfg-scale CFG_SCALE]
+                     [--num-sampling-steps NUM_SAMPLING_STEPS]
+                     [--global-seed GLOBAL_SEED] [--tf32 | --no-tf32]
+                     [--ckpt CKPT]
+sample_ddp.py: error: argument --model: invalid choice: 'W8A8' (choose from 'DiT-XL/2', 'DiT-XL/4', 'DiT-XL/8', 'DiT-L/2', 'DiT-L/4', 'DiT-L/8', 'DiT-B/2', 'DiT-B/4', 'DiT-B/8', 'DiT-S/2', 'DiT-S/4', 'DiT-S/8')
+usage: sample_ddp.py [-h]
+                     [--model {DiT-XL/2,DiT-XL/4,DiT-XL/8,DiT-L/2,DiT-L/4,DiT-L/8,DiT-B/2,DiT-B/4,DiT-B/8,DiT-S/2,DiT-S/4,DiT-S/8}]
+                     [--vae {ema,mse}] [--sample-dir SAMPLE_DIR]
+                     [--per-proc-batch-size PER_PROC_BATCH_SIZE]
+                     [--num-fid-samples NUM_FID_SAMPLES]
+                     [--image-size {256,512}] [--num-classes NUM_CLASSES]
+                     [--cfg-scale CFG_SCALE]
+                     [--num-sampling-steps NUM_SAMPLING_STEPS]
+                     [--global-seed GLOBAL_SEED] [--tf32 | --no-tf32]
+                     [--ckpt CKPT]
+usage: sample_ddp.py [-h]
+                     [--model {DiT-XL/2,DiT-XL/4,DiT-XL/8,DiT-L/2,DiT-L/4,DiT-L/8,DiT-B/2,DiT-B/4,DiT-B/8,DiT-S/2,DiT-S/4,DiT-S/8}]
+                     [--vae {ema,mse}] [--sample-dir SAMPLE_DIR]
+                     [--per-proc-batch-size PER_PROC_BATCH_SIZE]
+                     [--num-fid-samples NUM_FID_SAMPLES]
+                     [--image-size {256,512}] [--num-classes NUM_CLASSES]
+                     [--cfg-scale CFG_SCALE]
+                     [--num-sampling-steps NUM_SAMPLING_STEPS]
+                     [--global-seed GLOBAL_SEED] [--tf32 | --no-tf32]
+                     [--ckpt CKPT]
+sample_ddp.py: error: argument --model: invalid choice: 'W8A8' (choose from 'DiT-XL/2', 'DiT-XL/4', 'DiT-XL/8', 'DiT-L/2', 'DiT-L/4', 'DiT-L/8', 'DiT-B/2', 'DiT-B/4', 'DiT-B/8', 'DiT-S/2', 'DiT-S/4', 'DiT-S/8')
+sample_ddp.py: error: argument --model: invalid choice: 'W8A8' (choose from 'DiT-XL/2', 'DiT-XL/4', 'DiT-XL/8', 'DiT-L/2', 'DiT-L/4', 'DiT-L/8', 'DiT-B/2', 'DiT-B/4', 'DiT-B/8', 'DiT-S/2', 'DiT-S/4', 'DiT-S/8')
+sample_ddp.py: error: argument --model: invalid choice: 'W8A8' (choose from 'DiT-XL/2', 'DiT-XL/4', 'DiT-XL/8', 'DiT-L/2', 'DiT-L/4', 'DiT-L/8', 'DiT-B/2', 'DiT-B/4', 'DiT-B/8', 'DiT-S/2', 'DiT-S/4', 'DiT-S/8')
+E1124 22:40:25.896546 866780 site-packages/torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 2) local_rank: 0 (pid: 866785) of binary: /n/home11/mingzeyuan/.conda/envs/qdit/bin/python
+Traceback (most recent call last):
+  File "/n/home11/mingzeyuan/.conda/envs/qdit/bin/torchrun", line 33, in <module>
+    sys.exit(load_entry_point('torch==2.5.1', 'console_scripts', 'torchrun')())
+  File "/n/home11/mingzeyuan/.conda/envs/qdit/lib/python3.9/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 355, in wrapper
+    return f(*args, **kwargs)
+  File "/n/home11/mingzeyuan/.conda/envs/qdit/lib/python3.9/site-packages/torch/distributed/run.py", line 919, in main
+    run(args)
+  File "/n/home11/mingzeyuan/.conda/envs/qdit/lib/python3.9/site-packages/torch/distributed/run.py", line 910, in run
+    elastic_launch(
+  File "/n/home11/mingzeyuan/.conda/envs/qdit/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/n/home11/mingzeyuan/.conda/envs/qdit/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+sample_ddp.py FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2024-11-24_22:40:25
+  host      : holygpu8a25404.rc.fas.harvard.edu
+  rank      : 1 (local_rank: 1)
+  exitcode  : 2 (pid: 866786)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[2]:
+  time      : 2024-11-24_22:40:25
+  host      : holygpu8a25404.rc.fas.harvard.edu
+  rank      : 2 (local_rank: 2)
+  exitcode  : 2 (pid: 866787)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[3]:
+  time      : 2024-11-24_22:40:25
+  host      : holygpu8a25404.rc.fas.harvard.edu
+  rank      : 3 (local_rank: 3)
+  exitcode  : 2 (pid: 866788)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2024-11-24_22:40:25
+  host      : holygpu8a25404.rc.fas.harvard.edu
+  rank      : 0 (local_rank: 0)
+  exitcode  : 2 (pid: 866785)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
