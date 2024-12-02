@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Make sure to download reference npz file at https://github.com/openai/guided-diffusion/tree/main/evaluations, 
+# VIRTUAL_imagenet256_labeled.npz and VIRTUAL_imagenet512.npz, rename the VIRTUAL_imagenet256_labeled.npz to 
+# VIRTUAL_imagenet256.npz, and place it in the same directory as this script.
+
 steps=(50 100 250)
 sizes=(256 512)
 models=(
