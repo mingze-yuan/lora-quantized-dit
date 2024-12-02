@@ -158,7 +158,7 @@ def main(args):
     dist.barrier()
     dist.destroy_process_group()
     
-    ref_folder_dir = ""
+    ref_folder_dir = f"VIRTUAL_imagenet{args.image_size}.npz"
     create_npz_from_sample_folder(ref_folder_dir, args.num_fid_samples)
     evaluate(f"{ref_folder_dir}.npz", f"{sample_folder_dir}.npz")
 
