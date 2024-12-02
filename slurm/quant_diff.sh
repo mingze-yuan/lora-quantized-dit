@@ -21,11 +21,7 @@ nvidia-smi || echo "nvidia-smi not available"
 
 # Load Python environment
 module load python/3.12.5-fasrc01
-module load cuda/11.4.0-fasrc01 cudnn/8.2.4.15_cuda11.4-fasrc01
-
-# # Activate Python virtual environment
-mamba create -n lora-quantized-dit python=3.12 torchvision torchaudio cuda-toolkit=11.4 cudnn -c pytorch -c nvidia -c conda-forge
-mamba activate lora-quantized-dit
+mamba activate DiT
 
 # Verify CUDA availability in Python
 python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}'); print(f'CUDA devices: {torch.cuda.device_count()}')"
