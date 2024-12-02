@@ -159,6 +159,7 @@ def main(args):
     dist.destroy_process_group()
     
     ref_folder_dir = ""
+    create_npz_from_sample_folder(ref_folder_dir, args.num_fid_samples)
     evaluate(f"{ref_folder_dir}.npz", f"{sample_folder_dir}.npz")
 
 
