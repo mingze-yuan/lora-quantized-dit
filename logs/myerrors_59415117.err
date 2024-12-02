@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "/n/home11/mingzeyuan/DiT/evaluator.py", line 17, in <module>
-    import tensorflow.compat.v1 as tf
-ModuleNotFoundError: No module named 'tensorflow'

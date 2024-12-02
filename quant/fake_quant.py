@@ -7,7 +7,7 @@ from functools import partial
 def quantize_weight_per_channel_absmax(w, n_bits=8):
     # w: (out_features, in_features)
     scales = w.abs().max(dim=-1, keepdim=True)[0]
-    q_max = 2 ** (n_bits - 1) - 1
+    q_max = 2**(n_bits - 1) - 1
     scales.clamp_(min=1e-5).div_(q_max)
     w.div_(scales).round_().mul_(scales)
     return w
@@ -17,7 +17,7 @@ def quantize_weight_per_channel_absmax(w, n_bits=8):
 def quantize_weight_per_tensor_absmax(w, n_bits=8):
     # w: (out_features, in_features)
     scales = w.abs().max()
-    q_max = 2 ** (n_bits - 1) - 1
+    q_max = 2**(n_bits - 1) - 1
     scales.clamp_(min=1e-5).div_(q_max)
     w.div_(scales).round_().mul_(scales)
     return w
@@ -28,7 +28,7 @@ def quantize_activation_per_token_absmax(t, n_bits=8):
     t_shape = t.shape
     t.view(-1, t_shape[-1])
     scales = t.abs().max(dim=-1, keepdim=True)[0]
-    q_max = 2 ** (n_bits - 1) - 1
+    q_max = 2**(n_bits - 1) - 1
     scales.clamp_(min=1e-5).div_(q_max)
     t.div_(scales).round_().mul_(scales)
     return t
@@ -39,12 +39,14 @@ def quantize_activation_per_tensor_absmax(t, n_bits=8):
     t_shape = t.shape
     t.view(-1, t_shape[-1])
     scales = t.abs().max()
-    q_max = 2 ** (n_bits - 1) - 1
+    q_max = 2**(n_bits - 1) - 1
     scales.clamp_(min=1e-5).div_(q_max)
     t.div_(scales).round_().mul_(scales)
     return t
 
+
 class W8A8Linear(nn.Module):
+
     def __init__(
         self,
         in_features,
@@ -69,19 +71,21 @@ class W8A8Linear(nn.Module):
         if bias:
             self.register_buffer(
                 "bias",
-                torch.zeros(
-                    (1, self.out_features), dtype=torch.float32, requires_grad=False
-                ),
+                torch.zeros((1, self.out_features),
+                            dtype=torch.float32,
+                            requires_grad=False),
             )
         else:
             self.register_buffer("bias", None)
 
         if act_quant == "per_token":
             self.act_quant_name = "per_token"
-            self.act_quant = partial(quantize_activation_per_token_absmax, n_bits=8)
+            self.act_quant = partial(quantize_activation_per_token_absmax,
+                                     n_bits=8)
         elif act_quant == "per_tensor":
             self.act_quant_name = "per_tensor"
-            self.act_quant = partial(quantize_activation_per_tensor_absmax, n_bits=8)
+            self.act_quant = partial(quantize_activation_per_tensor_absmax,
+                                     n_bits=8)
         else:
             raise ValueError(f"Invalid act_quant: {act_quant}")
 
@@ -107,9 +111,10 @@ class W8A8Linear(nn.Module):
         return q_y
 
     @staticmethod
-    def from_float(
-        module, weight_quant="per_channel", act_quant="per_token", quantize_output=False
-    ):
+    def from_float(module,
+                   weight_quant="per_channel",
+                   act_quant="per_token",
+                   quantize_output=False):
         assert isinstance(module, torch.nn.Linear)
         new_module = W8A8Linear(
             module.in_features,
@@ -120,12 +125,10 @@ class W8A8Linear(nn.Module):
         )
         if weight_quant == "per_channel":
             new_module.weight = quantize_weight_per_channel_absmax(
-                module.weight, n_bits=8
-            )  # use 8-bit integer for weight
+                module.weight, n_bits=8)  # use 8-bit integer for weight
         elif weight_quant == "per_tensor":
             new_module.weight = quantize_weight_per_tensor_absmax(
-                module.weight, n_bits=8
-            )
+                module.weight, n_bits=8)
         else:
             raise ValueError(f"Invalid weight_quant: {weight_quant}")
         new_module.weight_quant_name = weight_quant
@@ -135,8 +138,10 @@ class W8A8Linear(nn.Module):
 
     def __repr__(self):
         return f"W8A8Linear({self.in_features}, {self.out_features}, bias={self.bias is not None}, weight_quant={self.weight_quant_name}, act_quant={self.act_quant_name}, output_quant={self.output_quant_name})"
-    
+
+
 class W4A8Linear(nn.Module):
+
     def __init__(
         self,
         in_features,
@@ -161,19 +166,21 @@ class W4A8Linear(nn.Module):
         if bias:
             self.register_buffer(
                 "bias",
-                torch.zeros(
-                    (1, self.out_features), dtype=torch.float32, requires_grad=False
-                ),
+                torch.zeros((1, self.out_features),
+                            dtype=torch.float32,
+                            requires_grad=False),
             )
         else:
             self.register_buffer("bias", None)
 
         if act_quant == "per_token":
             self.act_quant_name = "per_token"
-            self.act_quant = partial(quantize_activation_per_token_absmax, n_bits=8)
+            self.act_quant = partial(quantize_activation_per_token_absmax,
+                                     n_bits=8)
         elif act_quant == "per_tensor":
             self.act_quant_name = "per_tensor"
-            self.act_quant = partial(quantize_activation_per_tensor_absmax, n_bits=8)
+            self.act_quant = partial(quantize_activation_per_tensor_absmax,
+                                     n_bits=8)
         else:
             raise ValueError(f"Invalid act_quant: {act_quant}")
 
@@ -199,9 +206,10 @@ class W4A8Linear(nn.Module):
         return q_y
 
     @staticmethod
-    def from_float(
-        module, weight_quant="per_channel", act_quant="per_token", quantize_output=False
-    ):
+    def from_float(module,
+                   weight_quant="per_channel",
+                   act_quant="per_token",
+                   quantize_output=False):
         assert isinstance(module, torch.nn.Linear)
         new_module = W4A8Linear(
             module.in_features,
@@ -212,12 +220,10 @@ class W4A8Linear(nn.Module):
         )
         if weight_quant == "per_channel":
             new_module.weight = quantize_weight_per_channel_absmax(
-                module.weight, n_bits=4
-            )  # use 8-bit integer for weight
+                module.weight, n_bits=4)  # use 8-bit integer for weight
         elif weight_quant == "per_tensor":
             new_module.weight = quantize_weight_per_tensor_absmax(
-                module.weight, n_bits=4
-            )
+                module.weight, n_bits=4)
         else:
             raise ValueError(f"Invalid weight_quant: {weight_quant}")
         new_module.weight_quant_name = weight_quant
@@ -227,20 +233,25 @@ class W4A8Linear(nn.Module):
 
     def __repr__(self):
         return f"W4A8Linear({self.in_features}, {self.out_features}, bias={self.bias is not None}, weight_quant={self.weight_quant_name}, act_quant={self.act_quant_name}, output_quant={self.output_quant_name})"
-    
-def quantize_dit(
-    model, mode, weight_quant="per_tensor", act_quant="per_tensor", quantize_bmm_input=True
-):
+
+
+def quantize_dit(model,
+                 mode,
+                 weight_quant="per_tensor",
+                 act_quant="per_tensor",
+                 quantize_bmm_input=True):
     assert mode in ['W4A8', 'W8A8']
     for name, m in model.named_modules():
         # if isinstance(m, torch.nn.Linear):  # quantize each linear layer
         if isinstance(m, nn.Linear) and ("mlp" in name or "attn" in name):
             if mode == 'W8A8':
-                m = W8A8Linear.from_float(
-                    m, weight_quant=weight_quant, act_quant=act_quant, quantize_output=quantize_bmm_input
-                )
+                m = W8A8Linear.from_float(m,
+                                          weight_quant=weight_quant,
+                                          act_quant=act_quant,
+                                          quantize_output=quantize_bmm_input)
             else:
-                m = W4A8Linear.from_float(
-                    m, weight_quant=weight_quant, act_quant=act_quant, quantize_output=quantize_bmm_input
-                )
+                m = W4A8Linear.from_float(m,
+                                          weight_quant=weight_quant,
+                                          act_quant=act_quant,
+                                          quantize_output=quantize_bmm_input)
     return model

@@ -30,7 +30,7 @@ def space_timesteps(num_timesteps, section_counts):
     """
     if isinstance(section_counts, str):
         if section_counts.startswith("ddim"):
-            desired_count = int(section_counts[len("ddim") :])
+            desired_count = int(section_counts[len("ddim"):])
             for i in range(1, num_timesteps):
                 if len(range(0, num_timesteps, i)) == desired_count:
                     return set(range(0, num_timesteps, i))
@@ -46,8 +46,7 @@ def space_timesteps(num_timesteps, section_counts):
         size = size_per + (1 if i < extra else 0)
         if size < section_count:
             raise ValueError(
-                f"cannot divide section of {size} steps into {section_count}"
-            )
+                f"cannot divide section of {size} steps into {section_count}")
         if section_count <= 1:
             frac_stride = 1
         else:
@@ -86,28 +85,26 @@ class SpacedDiffusion(GaussianDiffusion):
         kwargs["betas"] = np.array(new_betas)
         super().__init__(**kwargs)
 
-    def p_mean_variance(
-        self, model, *args, **kwargs
-    ):  # pylint: disable=signature-differs
-        return super().p_mean_variance(self._wrap_model(model), *args, **kwargs)
+    def p_mean_variance(self, model, *args, **kwargs):  # pylint: disable=signature-differs
+        return super().p_mean_variance(self._wrap_model(model), *args,
+                                       **kwargs)
 
-    def training_losses(
-        self, model, *args, **kwargs
-    ):  # pylint: disable=signature-differs
-        return super().training_losses(self._wrap_model(model), *args, **kwargs)
+    def training_losses(self, model, *args, **kwargs):  # pylint: disable=signature-differs
+        return super().training_losses(self._wrap_model(model), *args,
+                                       **kwargs)
 
     def condition_mean(self, cond_fn, *args, **kwargs):
-        return super().condition_mean(self._wrap_model(cond_fn), *args, **kwargs)
+        return super().condition_mean(self._wrap_model(cond_fn), *args,
+                                      **kwargs)
 
     def condition_score(self, cond_fn, *args, **kwargs):
-        return super().condition_score(self._wrap_model(cond_fn), *args, **kwargs)
+        return super().condition_score(self._wrap_model(cond_fn), *args,
+                                       **kwargs)
 
     def _wrap_model(self, model):
         if isinstance(model, _WrappedModel):
             return model
-        return _WrappedModel(
-            model, self.timestep_map, self.original_num_steps
-        )
+        return _WrappedModel(model, self.timestep_map, self.original_num_steps)
 
     def _scale_timesteps(self, t):
         # Scaling is done by the wrapped model.
@@ -115,6 +112,7 @@ class SpacedDiffusion(GaussianDiffusion):
 
 
 class _WrappedModel:
+
     def __init__(self, model, timestep_map, original_num_steps):
         self.model = model
         self.timestep_map = timestep_map
@@ -122,7 +120,9 @@ class _WrappedModel:
         self.original_num_steps = original_num_steps
 
     def __call__(self, x, ts, **kwargs):
-        map_tensor = th.tensor(self.timestep_map, device=ts.device, dtype=ts.dtype)
+        map_tensor = th.tensor(self.timestep_map,
+                               device=ts.device,
+                               dtype=ts.dtype)
         new_ts = map_tensor[ts]
         # if self.rescale_timesteps:
         #     new_ts = new_ts.float() * (1000.0 / self.original_num_steps)
