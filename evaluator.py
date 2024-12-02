@@ -25,12 +25,7 @@ FID_POOL_NAME = "pool_3:0"
 FID_SPATIAL_NAME = "mixed_6/conv:0"
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("ref_batch", help="path to reference batch npz file")
-    parser.add_argument("sample_batch", help="path to sample batch npz file")
-    args = parser.parse_args()
-
+def evaluate(ref_batch, sample_batch):
     config = tf.ConfigProto(
         allow_soft_placement=
         True  # allows DecodeJpeg to run on CPU in Inception graph
@@ -44,16 +39,16 @@ def main():
     evaluator.warmup()
 
     print("computing reference batch activations...")
-    ref_acts = evaluator.read_activations(args.ref_batch)
+    ref_acts = evaluator.read_activations(ref_batch)
     print("computing/reading reference batch statistics...")
     ref_stats, ref_stats_spatial = evaluator.read_statistics(
-        args.ref_batch, ref_acts)
+        ref_batch, ref_acts)
 
     print("computing sample batch activations...")
-    sample_acts = evaluator.read_activations(args.sample_batch)
+    sample_acts = evaluator.read_activations(sample_batch)
     print("computing/reading sample batch statistics...")
     sample_stats, sample_stats_spatial = evaluator.read_statistics(
-        args.sample_batch, sample_acts)
+        sample_batch, sample_acts)
 
     print("Computing evaluations...")
     print("Inception Score:",
@@ -695,4 +690,8 @@ def _numpy_partition(arr, kth, **kwargs):
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("ref_batch", help="path to reference batch npz file")
+    parser.add_argument("sample_batch", help="path to sample batch npz file")
+    args = parser.parse_args()
+    evaluate(args.ref_batch, args.sample_batch)
