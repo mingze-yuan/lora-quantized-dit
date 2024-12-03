@@ -28,11 +28,13 @@ if device == "cpu":
     
 ################ Training Hyperparameter #################
 bit_depth = "6"
-rank = 196
-batch_size = 80
+rank = 64
+batch_size = 64
 learning_rate = 1e-3
-epochs = 15
-condition_awareness = False
+epochs = 8
+
+condition_aware = "no"
+time_condition_aware = False if condition_aware == "no" else True
 
 image_size = 256 #@param [256, 512]
 vae_model = "stabilityai/sd-vae-ft-ema" #@param ["stabilityai/sd-vae-ft-mse", "stabilityai/sd-vae-ft-ema"]
@@ -109,6 +111,31 @@ elif bit_depth == "7":
     
 print(f"Quantize the model to {bit_depth} bits")
     
+model.eval()
+torch.manual_seed(123)
+n = len(class_labels)
+z = torch.randn(n, 4, latent_size, latent_size, device=device)
+y = torch.tensor(class_labels, device=device)
+
+# Setup classifier-free guidance:
+z = torch.cat([z, z], 0)
+y_null = torch.tensor([1000] * n, device=device)
+y = torch.cat([y, y_null], 0)
+model_kwargs = dict(y=y, cfg_scale=cfg_scale)
+
+# Sample images:
+samples = diffusion.p_sample_loop(
+    model.forward_with_cfg, z.shape, z, clip_denoised=False,
+    model_kwargs=model_kwargs, progress=True, device=device
+)
+samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
+samples = vae.decode(samples / 0.18215).sample
+
+epoch = 0
+# Save and display images:
+save_image(samples, f"temp_result{condition_aware}/{rank}_r_{bit_depth}_bit/original_sample_{epoch}_{rank}_r_{bit_depth}_bit.png", nrow=int(samples_per_row),
+           normalize=True, value_range=(-1, 1))
+    
 ################# LoRA Model #################
 class LoRALayer(nn.Module):
     def __init__(self, original_layer, r=128, alpha=1.0):
@@ -167,7 +194,7 @@ def add_lora_to_model(model, r=128, alpha=1.0):
         # print(layer_name)
         # print(module_name)
         setattr(submodule, layer_name, LoRALayer(module, r=r, alpha=alpha))
-    model.time_condition_aware = condition_awareness
+    model.time_condition_aware = time_condition_aware
 
 # Assuming `model` is the DiT model with LoRA layers added
 def freeze_model_weights(model):
@@ -199,44 +226,50 @@ dataloader = DataLoader(full_dataset, batch_size=batch_size, shuffle=False)
 # Optimizer
 optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
 
-ckpt_path = f"/n/holylabs/LABS/wattenberg_lab/Users/yidachen/weights_backup/dit_{bit_depth}bit_{rank}r_{time_condition_aware}.pth"
+ckpt_path = f"/n/holylabs/LABS/wattenberg_lab/Users/yidachen/weights_backup/dit_{bit_depth}bit_{rank}r{condition_aware}.pth"
 if os.path.isfile(ckpt_path):
-    print(f"Load the checkpoint: {ckpt}")
+    print(f"Load the checkpoint: {ckpt_path}")
     checkpoint = torch.load(ckpt_path, weights_only=True)
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    start_epoch = checkpoint['epoch']
+    start_epoch = checkpoint['epoch'] + 1
+    del checkpoint
+    torch.cuda.empty_cache()
 else:
     start_epoch = 0
+    
+    
 # loss = checkpoint['loss']
 all_loss = []
 seed = 0 #@param {type:"number"}
 torch.manual_seed(seed)
 for epoch in tqdm(range(start_epoch, epochs)):
     # Create sampling noise:
-    model.eval()
-    # torch.manual_seed(0)
-    n = len(class_labels)
-    z = torch.randn(n, 4, latent_size, latent_size, device=device)
-    y = torch.tensor(class_labels, device=device)
+    if epoch != 0:
+        model.eval()
+        # torch.manual_seed(0)
+        n = len(class_labels)
+        z = torch.randn(n, 4, latent_size, latent_size, device=device)
+        y = torch.tensor(class_labels, device=device)
 
-    # Setup classifier-free guidance:
-    z = torch.cat([z, z], 0)
-    y_null = torch.tensor([1000] * n, device=device)
-    y = torch.cat([y, y_null], 0)
-    model_kwargs = dict(y=y, cfg_scale=cfg_scale)
+        # Setup classifier-free guidance:
+        z = torch.cat([z, z], 0)
+        y_null = torch.tensor([1000] * n, device=device)
+        y = torch.cat([y, y_null], 0)
+        model_kwargs = dict(y=y, cfg_scale=cfg_scale)
 
-    # Sample images:
-    samples = diffusion.p_sample_loop(
-        model.forward_with_cfg, z.shape, z, clip_denoised=False,
-        model_kwargs=model_kwargs, progress=True, device=device
-    )
-    samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
-    samples = vae.decode(samples / 0.18215).sample
+        # Sample images:
+        samples = diffusion.p_sample_loop(
+            model.forward_with_cfg, z.shape, z, clip_denoised=False,
+            model_kwargs=model_kwargs, progress=True, device=device
+        )
+        samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
+        samples = vae.decode(samples / 0.18215).sample
 
-    # Save and display images:
-    save_image(samples, f"temp_result/{rank}_r_{bit_depth}_bit/sample_{epoch}_{rank}_r_{bit_depth}_bit_{time_condition_aware}.png", nrow=int(samples_per_row),
-               normalize=True, value_range=(-1, 1))
+        # Save and display images:
+
+        save_image(samples, f"temp_result{condition_aware}/{rank}_r_{bit_depth}_bit/sample_{epoch}_{rank}_r_{bit_depth}_bit.png", nrow=int(samples_per_row),
+                   normalize=True, value_range=(-1, 1))
     
     model.train()
     running_loss = 0.0
@@ -281,5 +314,32 @@ for epoch in tqdm(range(start_epoch, epochs)):
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': all_loss,
-            }, f"/n/holylabs/LABS/wattenberg_lab/Users/yidachen/weights_backup/dit_{bit_depth}bit_{rank}r_{time_condition_aware}.pth")
+            }, f"/n/holylabs/LABS/wattenberg_lab/Users/yidachen/weights_backup/dit_{bit_depth}bit_{rank}r{condition_aware}.pth")
+    
+    
+epoch += 1
+model.eval()
+# torch.manual_seed(0)
+n = len(class_labels)
+z = torch.randn(n, 4, latent_size, latent_size, device=device)
+y = torch.tensor(class_labels, device=device)
+
+# Setup classifier-free guidance:
+z = torch.cat([z, z], 0)
+y_null = torch.tensor([1000] * n, device=device)
+y = torch.cat([y, y_null], 0)
+model_kwargs = dict(y=y, cfg_scale=cfg_scale)
+
+# Sample images:
+samples = diffusion.p_sample_loop(
+    model.forward_with_cfg, z.shape, z, clip_denoised=False,
+    model_kwargs=model_kwargs, progress=True, device=device
+)
+samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
+samples = vae.decode(samples / 0.18215).sample
+
+# Save and display images:
+
+save_image(samples, f"temp_result{condition_aware}/{rank}_r_{bit_depth}_bit/sample_{epoch}_{rank}_r_{bit_depth}_bit.png", nrow=int(samples_per_row),
+           normalize=True, value_range=(-1, 1))
 print("Training completed.")

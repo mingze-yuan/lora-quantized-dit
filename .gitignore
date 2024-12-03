@@ -1,0 +1,3 @@
+temp_results/
+pretrained_models/
+*.npz
