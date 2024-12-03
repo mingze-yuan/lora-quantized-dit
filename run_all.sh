@@ -24,7 +24,9 @@ mkdir -p results
 for step in "${steps[@]}"; do
     for size in "${sizes[@]}"; do
         for model in "${models[@]}"; do
-            python sample_and_evaluate.py --num-sampling-steps "$step" --image-size "$size" --ckpt "checkpoints/$model" > "results/$model-$size-$step.txt"
+            torchrun --nnodes=1 --nproc_per_node=4 sample_and_evaluate.py \
+            --num-fid-samples 15000 \
+            --num-sampling-steps "$step" --image-size "$size" --ckpt "checkpoints/$model" > "results/$model-$size-$step.txt"
         done
     done
 done
