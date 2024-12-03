@@ -1,3 +1,4 @@
-temp_results/
+temp_result/
+temp_resultno/
 pretrained_models/
 *.npz
