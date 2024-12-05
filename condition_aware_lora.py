@@ -110,6 +110,8 @@ elif bit_depth == "6":
     quantize_to_6bit_and_back(model)
 elif bit_depth == "7":
     quantize_to_7bit_and_back(model)
+elif bit_depth == "8":
+    quantize_to_7bit_and_back(model)
     
 print(f"Quantize the model to {bit_depth} bits")
     
