@@ -2,3 +2,14 @@ temp_result/
 temp_resultno/
 pretrained_models/
 *.npz
+.vscode
+.DS_Store
+samples/
+example_sampled_outputs/
+results/
+results_5000_samples/
+
+
+__pycache__/
+.ipynb_checkpoints
+logs/

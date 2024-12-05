@@ -14,7 +14,7 @@ from tqdm.auto import tqdm
 from torch.utils.data import DataLoader, Subset
 import torch.optim as optim
 
-from models import DiT_models  # Ensure this imports correctly
+from models_lora import DiT_models  # Ensure this imports correctly
 
 from download import find_model
 from models_lora import DiT_XL_2
@@ -28,7 +28,7 @@ if device == "cpu":
     
 ################ Training Hyperparameter #################
 bit_depth = "6"
-rank = 64
+rank = 128
 batch_size = 64
 learning_rate = 1e-3
 epochs = 8
@@ -104,7 +104,9 @@ def quantize_to_4bit_and_back(model):
             
         
 ################# Quantization rate #################
-if bit_depth == "6":
+if bit_depth == "4":
+    quantize_to_4bit_and_back(model)
+elif bit_depth == "6":
     quantize_to_6bit_and_back(model)
 elif bit_depth == "7":
     quantize_to_7bit_and_back(model)
@@ -219,7 +221,7 @@ transform = transforms.Compose([
 
 
 full_dataset = ImageFolder("/n/holylabs/LABS/wattenberg_lab/Everyone/imagenet-medium/train_100000/train_100000/", transform=transform)
-dataloader = DataLoader(full_dataset, batch_size=batch_size, shuffle=False)
+dataloader = DataLoader(full_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
 
 
 ################# Training #################
