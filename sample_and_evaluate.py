@@ -11,6 +11,7 @@ evaluation metrics via the ADM repo: https://github.com/openai/guided-diffusion/
 For a simple single-GPU/CPU sampling script, see sample.py.
 """
 import torch
+from torch import nn
 import torch.distributed as dist
 from models import DiT_models
 from download import find_model
@@ -24,8 +25,15 @@ import math
 import argparse
 from evaluator import *
 
+import os
+# os.environ['MASTER_ADDR'] = 'localhost'
+# os.environ['MASTER_PORT'] = '8888'
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+# dist.init_process_group(backend='nccl', init_method='env://', rank = torch.cuda.device_count(), world_size = 1)
 
-def create_npz_from_sample_folder(sample_dir, num=50_000):
+
+
+def create_npz_from_sample_folder(sample_dir, num=5_000):
     """
     Builds a single .npz file from a folder of .png samples.
     """
@@ -51,6 +59,7 @@ def main(args):
     ), "Sampling with DDP requires at least one GPU. sample.py supports CPU-only usage"
     torch.set_grad_enabled(False)
 
+    print("Set up ddp")
     # Setup DDP:
     dist.init_process_group("nccl")
     rank = dist.get_rank()
@@ -83,7 +92,7 @@ def main(args):
         ".pt", "") if args.ckpt else "pretrained"
     folder_name = f"{model_string_name}-{ckpt_string_name}-size-{args.image_size}-vae-{args.vae}-" \
                   f"cfg-{args.cfg_scale}-seed-{args.global_seed}"
-    sample_folder_dir = f"{args.sample_dir}/{folder_name}"
+    sample_folder_dir = f"/n/holylabs/LABS/wattenberg_lab/Users/yidachen/dit_npz/{args.sample_dir}/{folder_name}"
     if rank == 0:
         os.makedirs(sample_folder_dir, exist_ok=True)
         print(f"Saving .png samples at {sample_folder_dir}")
@@ -106,61 +115,63 @@ def main(args):
     pbar = range(iterations)
     pbar = tqdm(pbar) if rank == 0 else pbar
     total = 0
-    for _ in pbar:
-        # Sample inputs:
-        z = torch.randn(n,
-                        model.in_channels,
-                        latent_size,
-                        latent_size,
-                        device=device)
-        y = torch.randint(0, args.num_classes, (n, ), device=device)
+    if not os.path.exists("{sample_folder_dir}.npz"):
+        for _ in pbar:
+            # Sample inputs:
+            z = torch.randn(n,
+                            model.in_channels,
+                            latent_size,
+                            latent_size,
+                            device=device)
+            y = torch.randint(0, args.num_classes, (n, ), device=device)
 
-        # Setup classifier-free guidance:
-        if using_cfg:
-            z = torch.cat([z, z], 0)
-            y_null = torch.tensor([1000] * n, device=device)
-            y = torch.cat([y, y_null], 0)
-            model_kwargs = dict(y=y, cfg_scale=args.cfg_scale)
-            sample_fn = model.forward_with_cfg
-        else:
-            model_kwargs = dict(y=y)
-            sample_fn = model.forward
+            # Setup classifier-free guidance:
+            if using_cfg:
+                z = torch.cat([z, z], 0)
+                y_null = torch.tensor([1000] * n, device=device)
+                y = torch.cat([y, y_null], 0)
+                model_kwargs = dict(y=y, cfg_scale=args.cfg_scale)
+                sample_fn = model.forward_with_cfg
+            else:
+                model_kwargs = dict(y=y)
+                sample_fn = model.forward
 
-        # Sample images:
-        samples = diffusion.p_sample_loop(sample_fn,
-                                          z.shape,
-                                          z,
-                                          clip_denoised=False,
-                                          model_kwargs=model_kwargs,
-                                          progress=False,
-                                          device=device)
-        if using_cfg:
-            samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
+            # Sample images:
+            samples = diffusion.p_sample_loop(sample_fn,
+                                              z.shape,
+                                              z,
+                                              clip_denoised=False,
+                                              model_kwargs=model_kwargs,
+                                              progress=False,
+                                              device=device)
+            if using_cfg:
+                samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
 
-        samples = vae.decode(samples / 0.18215).sample
-        samples = torch.clamp(127.5 * samples + 128.0, 0,
-                              255).permute(0, 2, 3,
-                                           1).to("cpu",
-                                                 dtype=torch.uint8).numpy()
+            samples = vae.decode(samples / 0.18215).sample
+            samples = torch.clamp(127.5 * samples + 128.0, 0,
+                                  255).permute(0, 2, 3,
+                                               1).to("cpu",
+                                                     dtype=torch.uint8).numpy()
 
-        # Save samples to disk as individual .png files
-        for i, sample in enumerate(samples):
-            index = i * dist.get_world_size() + rank + total
-            Image.fromarray(sample).save(
-                f"{sample_folder_dir}/{index:06d}.png")
-        total += global_batch_size
+            # Save samples to disk as individual .png files
+            for i, sample in enumerate(samples):
+                index = i * dist.get_world_size() + rank + total
+                Image.fromarray(sample).save(
+                    f"{sample_folder_dir}/{index:06d}.png")
+            total += global_batch_size
+            torch.cuda.empty_cache()
 
-    # Make sure all processes have finished saving their samples before attempting to convert to .npz
-    dist.barrier()
-    if rank == 0:
-        create_npz_from_sample_folder(sample_folder_dir, args.num_fid_samples)
-        print("Done.")
-    dist.barrier()
+        # Make sure all processes have finished saving their samples before attempting to convert to .npz
+        dist.barrier()
+        if rank == 0:
+            create_npz_from_sample_folder(sample_folder_dir, args.num_fid_samples)
+            print("Done.")
+        dist.barrier()
     dist.destroy_process_group()
     
     # Download at https://github.com/openai/guided-diffusion/tree/main/evaluations
-    ref_folder_dir = f"VIRTUAL_imagenet{args.image_size}.npz"
-    create_npz_from_sample_folder(ref_folder_dir, args.num_fid_samples)
+    ref_folder_dir = f"VIRTUAL_imagenet{args.image_size}"
+    # create_npz_from_sample_folder(ref_folder_dir, args.num_fid_samples)
     evaluate(f"{ref_folder_dir}.npz", f"{sample_folder_dir}.npz")
 
 
@@ -175,8 +186,8 @@ if __name__ == "__main__":
                         choices=["ema", "mse"],
                         default="ema")
     parser.add_argument("--sample-dir", type=str, default="samples")
-    parser.add_argument("--per-proc-batch-size", type=int, default=32)
-    parser.add_argument("--num-fid-samples", type=int, default=50_000)
+    parser.add_argument("--per-proc-batch-size", type=int, default=64)
+    parser.add_argument("--num-fid-samples", type=int, default=5_000)
     parser.add_argument("--image-size",
                         type=int,
                         choices=[256, 512],
@@ -200,4 +211,5 @@ if __name__ == "__main__":
         "Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model)."
     )
     args = parser.parse_args()
+    print("Number of GPUs",  torch.cuda.device_count())
     main(args)
