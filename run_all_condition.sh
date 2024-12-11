@@ -21,14 +21,14 @@
 
 steps=(100)
 sizes=(256)
-models=("dit_6bit_128rno.pth")
+models=("dit_6bit_64r_yes.pth")
 
 mkdir -p results
 
 for step in "${steps[@]}"; do
     for size in "${sizes[@]}"; do
         for model in "${models[@]}"; do
-            python -m torch.distributed.launch --use_env sample_and_evaluate_condition.py --rk 128 --num-sampling-steps "$step" --image-size "$size" --ckpt "/n/holylabs/LABS/wattenberg_lab/Users/yidachen/weights_backup/$model" > "results/$model-$size-$step.txt"
+            python -m torch.distributed.launch --use_env sample_and_evaluate_condition.py --rk 64 --num-sampling-steps "$step" --image-size "$size" --ckpt "/n/holylabs/LABS/wattenberg_lab/Users/yidachen/weights_backup/$model" > "results/$model-$size-$step.txt"
         done
     done
 done

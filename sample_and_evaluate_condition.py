@@ -29,9 +29,10 @@ import os
 # os.environ['MASTER_ADDR'] = 'localhost'
 # os.environ['MASTER_PORT'] = '8888'
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
-time_condition_aware = False
-
+time_condition_aware = True
+layer_aware = "_yes"
 # dist.init_process_group(backend='nccl', init_method='env://', rank = torch.cuda.device_count(), world_size = 1)
+
 
 
 ################# LoRA Model #################
@@ -87,11 +88,20 @@ def add_lora_to_model(model, r=128, alpha=1.0):
         for module_name in module_names:
             submodule = getattr(submodule, module_name)
 
+        if layer_aware == "_yes":
+            if "attn.proj" in name:
+                adjusted_r = int(r * 0.7)
+            elif "attn.qkv" in name:
+                adjusted_r = int(r * 0.9)
+            else:
+                adjusted_r = r
+        else:
+            adjusted_r = r
         # Replace the layer with a LoRA layer
         # print(submodule)
         # print(layer_name)
         # print(module_name)
-        setattr(submodule, layer_name, LoRALayer(module, r=r, alpha=alpha))
+        setattr(submodule, layer_name, LoRALayer(module, r=adjusted_r, alpha=alpha))
     model.time_condition_aware = time_condition_aware
 
 # Assuming `model` is the DiT model with LoRA layers added
@@ -271,7 +281,7 @@ if __name__ == "__main__":
                         default="ema")
     parser.add_argument("--sample-dir", type=str, default="samples")
     parser.add_argument("--per-proc-batch-size", type=int, default=64)
-    parser.add_argument("--num-fid-samples", type=int, default=10_000)
+    parser.add_argument("--num-fid-samples", type=int, default=5_000)
     parser.add_argument("--image-size",
                         type=int,
                         choices=[256, 512],

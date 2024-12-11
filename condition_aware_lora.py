@@ -33,7 +33,8 @@ batch_size = 64
 learning_rate = 1e-3
 epochs = 8
 
-condition_aware = "no"
+condition_aware = ""
+layer_aware = "_yes"
 time_condition_aware = False if condition_aware == "no" else True
 
 image_size = 256 #@param [256, 512]
@@ -137,7 +138,7 @@ samples = vae.decode(samples / 0.18215).sample
 
 epoch = 0
 # Save and display images:
-save_image(samples, f"temp_result{condition_aware}/{rank}_r_{bit_depth}_bit/original_sample_{epoch}_{rank}_r_{bit_depth}_bit.png", nrow=int(samples_per_row),
+save_image(samples, f"temp_result{condition_aware}/{rank}_r_{bit_depth}_bit/original_sample_{epoch}_{rank}_r_{bit_depth}_bit{layer_aware}.png", nrow=int(samples_per_row),
            normalize=True, value_range=(-1, 1))
     
 ################# LoRA Model #################
@@ -192,12 +193,20 @@ def add_lora_to_model(model, r=128, alpha=1.0):
         *module_names, layer_name = name.split(".")
         for module_name in module_names:
             submodule = getattr(submodule, module_name)
-
+        if layer_aware == "_yes":
+            if "attn.proj" in name:
+                adjusted_r = int(r * 0.7)
+            elif "attn.qkv" in name:
+                adjusted_r = int(r * 0.9)
+            else:
+                adjusted_r = r
+        else:
+            adjusted_r = r
         # Replace the layer with a LoRA layer
         # print(submodule)
         # print(layer_name)
         # print(module_name)
-        setattr(submodule, layer_name, LoRALayer(module, r=r, alpha=alpha))
+        setattr(submodule, layer_name, LoRALayer(module, r=adjusted_r, alpha=alpha))
     model.time_condition_aware = time_condition_aware
 
 # Assuming `model` is the DiT model with LoRA layers added
@@ -230,7 +239,7 @@ dataloader = DataLoader(full_dataset, batch_size=batch_size, shuffle=False, pin_
 # Optimizer
 optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
 
-ckpt_path = f"/n/holylabs/LABS/wattenberg_lab/Users/yidachen/weights_backup/dit_{bit_depth}bit_{rank}r{condition_aware}.pth"
+ckpt_path = f"/n/holylabs/LABS/wattenberg_lab/Users/yidachen/weights_backup/dit_{bit_depth}bit_{rank}r{condition_aware}{layer_aware}.pth"
 if os.path.isfile(ckpt_path):
     print(f"Load the checkpoint: {ckpt_path}")
     checkpoint = torch.load(ckpt_path, weights_only=True)
@@ -272,7 +281,7 @@ for epoch in tqdm(range(start_epoch, epochs)):
 
         # Save and display images:
 
-        save_image(samples, f"temp_result{condition_aware}/{rank}_r_{bit_depth}_bit/sample_{epoch}_{rank}_r_{bit_depth}_bit.png", nrow=int(samples_per_row),
+        save_image(samples, f"temp_result{condition_aware}/{rank}_r_{bit_depth}_bit/sample_{epoch}_{rank}_r_{bit_depth}_bit{layer_aware}.png", nrow=int(samples_per_row),
                    normalize=True, value_range=(-1, 1))
     
     model.train()
@@ -318,7 +327,7 @@ for epoch in tqdm(range(start_epoch, epochs)):
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': all_loss,
-            }, f"/n/holylabs/LABS/wattenberg_lab/Users/yidachen/weights_backup/dit_{bit_depth}bit_{rank}r{condition_aware}.pth")
+            }, f"/n/holylabs/LABS/wattenberg_lab/Users/yidachen/weights_backup/dit_{bit_depth}bit_{rank}r{condition_aware}{layer_aware}.pth")
     
     
 epoch += 1
@@ -344,6 +353,6 @@ samples = vae.decode(samples / 0.18215).sample
 
 # Save and display images:
 
-save_image(samples, f"temp_result{condition_aware}/{rank}_r_{bit_depth}_bit/sample_{epoch}_{rank}_r_{bit_depth}_bit.png", nrow=int(samples_per_row),
+save_image(samples, f"temp_result{condition_aware}/{rank}_r_{bit_depth}_bit/sample_{epoch}_{rank}_r_{bit_depth}_bit{layer_aware}.png", nrow=int(samples_per_row),
            normalize=True, value_range=(-1, 1))
 print("Training completed.")
