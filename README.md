@@ -17,7 +17,10 @@ conda activate dit
 
 We provide a training script for DiT in [`condition_aware_lora`](condition_aware_lora.py). This script can be used to train condition aware LoRA on an absmax quantized DiT model.
 
-You can specifiy the bit depth of the quantized DiT model by modifying the global variable `bit_depth = "{select one number from 4, 6, 7, or 8}"`. The global rank of the LoRA model can be changed using `rank = {an integer number}` variable. `condition_aware` variable controls whether the condition awareness is used in the finetuning. Set this variable to `condition_aware = ""` for condition-aware LoRA. Set it to `condition_aware="no"` for the original LoRA finetuning. `layer_aware` variable controls whether variable rank will be used for MLP and attention layers. Set this variable to `layer_aware="_yes"` for cross-layer variable rank. Set it to `layer_aware=""` for a single global rank that is applied to all LoRA modules.
+You can specifiy the bit depth of the quantized DiT model by modifying the global variable `bit_depth = "{select one number from 4, 6, 7, or 8}"`.  
+The global rank of the LoRA model can be changed using `rank = {an integer number}` variable.  
+`condition_aware` variable controls whether the condition awareness is used in the finetuning. Set this variable to `condition_aware = ""` for condition-aware LoRA. Set it to `condition_aware="no"` for the original LoRA finetuning.  
+`layer_aware` variable controls whether variable rank will be used for MLP and attention layers. Set this variable to `layer_aware="_yes"` for cross-layer variable rank. Set it to `layer_aware=""` for a single global rank that is applied to all LoRA modules.
 
 
 ## Evaluating Finetuned CA-LoRA + DiT
